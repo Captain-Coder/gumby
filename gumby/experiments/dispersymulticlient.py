@@ -36,7 +36,7 @@ from collections import Iterable, defaultdict
 from os import chdir, environ, getpid, makedirs, path, symlink
 from random import random
 from sys import exit
-from time import time, sleep
+from time import time
 from traceback import print_exc
 
 import shutil
@@ -570,8 +570,10 @@ class DispersyExperimentTriblerProvider(DispersyExperimentProvider):
 
     def start_dispersy(self, client, autoload_discovery=True):
         from twisted.python.threadable import isInIOThread
-        assert isInIOThread()
         from Tribler.Core.Session import Session
+        from Tribler.Core.simpledefs import NTFY_STARTED, NTFY_TRIBLER
+
+        assert isInIOThread()
         logging.error("Starting Tribler Session")
         self.session_config = self.setup_session_config(client)
         self.session = Session(scfg=self.session_config)
@@ -586,15 +588,8 @@ class DispersyExperimentTriblerProvider(DispersyExperimentProvider):
             client.post_start_dispersy()
 
         def _do_start():
-            logging.error("Upgrader")
-            upgrader = self.session.prestart()
-            while not upgrader.is_done:
-                sleep(0.1)
-            return self.session.start().addCallback(on_tribler_started).addErrback(_handle_failure)
-
-        def _handle_failure(f):
-            logging.error("Got an exception while starting Tribler session: %s", f.getTraceback())
-            raise f
+            self.session.add_observer(on_tribler_started, NTFY_TRIBLER, [NTFY_STARTED])
+            return self.session.start()
 
         _do_start()
 

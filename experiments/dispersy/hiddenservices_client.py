@@ -37,12 +37,13 @@
 
 # Code:
 
+import random
 from os import path
 
-from gumby.experiments.dispersymulticlient import MultiDispersyExperimentScriptClient, BASE_DIR
-from gumby.experiments.dispersymulticlient import main
+from gumby.experiments.dispersymulticlient import MultiDispersyExperimentScriptClient, main, BASE_DIR
 import logging
 from twisted.python.log import msg
+from twisted.internet import reactor
 from posix import environ
 
 
@@ -55,6 +56,9 @@ class HiddenServicesClient(MultiDispersyExperimentScriptClient):
         self.speed_download = {'download': 0}
         self.speed_upload = {'upload': 0}
         self.progress = {'progress': 0}
+        self.download = None
+        self.seeders = {}
+        self.testfilesize = 100 * 1024 * 1024
         self.security_limiters = False
         self.min_circuits = 3
         self.max_circuits = 5
@@ -101,6 +105,26 @@ class HiddenServicesClient(MultiDispersyExperimentScriptClient):
         config.set_anon_listen_port(27000 + self.scenario_runner._peernumber * 10)
         return config
 
+    def setup_session_config(self):
+        config = super(HiddenServicesClient, self).setup_session_config()
+        config.set_tunnel_community_enabled(False)
+        return config
+
+    def update_seed_peers(self):
+        if self.download:
+            for seeder, port in self.seeders.iteritems():
+                addr = (seeder.sock_addr[0], port)
+                logging.critical("ADDING PEER TO DOWNLOAD: " + str(addr))
+                self.download.add_peer(addr)
+
+    def seeder_registered(self, value_dict):
+        self.seeders = value_dict
+        self.update_seed_peers()
+
+    def get_my_member(self):
+        keypair = self.session.multichain_keypair
+        return self._dispersy.get_member(private_key=keypair.key_to_bin())
+
     def log_progress_stats(self, ds):
         new_speed_download = {'download': ds.get_current_speed('down')}
         self.speed_download = self.print_on_change("speed-download",
@@ -117,21 +141,42 @@ class HiddenServicesClient(MultiDispersyExperimentScriptClient):
                                                  self.speed_upload,
                                                  new_speed_upload)
 
-    def fake_create_introduction_point(self, info_hash):
-        msg("Fake creating introduction points, to prevent this download from messing other experiments")
-        pass
+    def start_download(self, filename, hops=1):
+        hops = int(hops)
 
+        def cb_start_download():
+            from Tribler.Core.simpledefs import dlstatus_strings
+            self.annotate('start downloading %s with %d hop(s)' % (filename, hops))
 
-    def online(self, dont_empty=False):
-        super(HiddenServicesClient, self).online(dont_empty)
-        if not self.session is None:
-            self.session.set_anon_proxy_settings(2, ("127.0.0.1", self.session.get_tunnel_community_socks5_listen_ports()))
-            self.session.lm.tunnel_community = self.tunnel_community
+            def cb(ds):
+                logging.error('Download infohash=%s, hops=%d, down=%s, up=%d, progress=%s, status=%s, peers=%s, cand=%d' %
+                              (tdef.get_infohash().encode('hex')[:5],
+                               hops,
+                               ds.get_current_speed('down'),
+                               ds.get_current_speed('up'),
+                               ds.get_progress(),
+                               dlstatus_strings[ds.get_status()],
+                               sum(ds.get_num_seeds_peers()),
+                               sum(1 for _ in self._community.dispersy_yield_verified_candidates())))
 
-            def monitor_downloads(dslist):
-                self.tunnel_community.monitor_downloads(dslist)
-                return (1.0, [])
-            self.session.set_download_states_callback(monitor_downloads, False)
+                self.log_progress_stats(ds)
+
+                return 1.0, False
+
+            tdef = self.create_test_torrent(filename)
+
+            from Tribler.Core.DownloadConfig import DefaultDownloadStartupConfig
+            defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+            dscfg = defaultDLConfig.copy()
+            dscfg.set_hops(hops)
+            dscfg.set_dest_dir(
+            path.join(BASE_DIR, 'tribler', 'download-%s-%d' % (self.session.get_dispersy_port(), hops)))
+
+            self.download = self.session.start_download_from_tdef(tdef, dscfg)
+            self.download.set_state_callback(cb)
+            self.update_seed_peers()
+
+        reactor.callInThread(cb_start_download)
 
     def introduce_candidates(self):
         # We are letting dispersy deal with addins the community's candidate to itself.
@@ -139,7 +184,7 @@ class HiddenServicesClient(MultiDispersyExperimentScriptClient):
         for i in range(len(self.all_vars)):
             port = 21000 + i + 1
             if self.dispersy_port != port:
-                print "Introducing.."
+                print "Introducing..."
                 self.tunnel_community.add_discovered_candidate(Candidate(("127.0.0.1", port),
                                                                    tunnel=False))
                 print "Tunnel Community now has " + str(sum(1 for _ in self.tunnel_community.dispersy_yield_candidates())) + " candidates"
@@ -147,110 +192,68 @@ class HiddenServicesClient(MultiDispersyExperimentScriptClient):
     def set_security_limiters(self, value):
         self.security_limiters = value == 'True'
 
-    def create_tdef(self, file_name="", file_size=100 * 1024 * 1024):
+    def create_test_torrent(self, filename=''):
+        logging.error("Create %s download" % filename)
+        filename = path.join(BASE_DIR, "tribler", str(self.scenario_file) + str(filename))
+        logging.info("Creating torrent...")
+        if not path.isfile(filename):
+            rnd_kb = "".join([chr(random.randint(0, 255))] * 1024)
+            with open(filename, 'wb') as fp:
+                for _ in xrange(self.testfilesize / 1024):
+                    fp.write(rnd_kb)
+
         from Tribler.Core.TorrentDef import TorrentDef
-        tdef = TorrentDef()
-        download_file = path.join(BASE_DIR, "output", str(self.scenario_file) + "-" + file_name + "-download_file")
-        if not path.exists(download_file):
-            with open(download_file, 'wb') as fp:
-                fp.write("0" * file_size)
-        tdef.add_content(download_file)
-        tdef.set_tracker("http://fake.net/announce")
-        tdef.finalize()
-        tdef_file = path.join(BASE_DIR, "output", str(file_name) + ".torrent")
-        if not path.exists(tdef_file):
+        tdef_file = path.join(BASE_DIR, "output", "gen.torrent")
+        if path.isfile(tdef_file):
+            f_tdef = TorrentDef.load(tdef_file)
+            from Tribler.Core.TorrentDef import TorrentDefNoMetainfo
+            tdef = TorrentDefNoMetainfo(f_tdef.get_infohash(), filename)
+        else:
+            tdef = TorrentDef()
+            tdef.add_content(filename)
+            tdef.set_tracker("http://fake.net/announce")
+            tdef.finalize()
             tdef.save(tdef_file)
         return tdef
 
-    def get_tdef(self, bullshit):
-        tdef_file = path.join(BASE_DIR, "very_not_illegal.torrent")
-        from Tribler.Core.TorrentDef import TorrentDef
-        return TorrentDef().load(tdef_file)
-
-    def start_seeder(self, file_name, hops=0):
+    def start_seeder(self, filename, hops=0):
         hops = int(hops)
-        tdef = self.get_tdef(file_name)
-        self.annotate('start seeding %d hop(s)' % hops)
 
-        msg("Start seeding")
-        print "Hello I am a seeder an my listen port is: " + str(self.session.get_listen_port())
+        def cb_seeder_download():
+            tdef = self.create_test_torrent(filename)
 
-        from Tribler.Core.DownloadConfig import DefaultDownloadStartupConfig
-        defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
-        dscfg = defaultDLConfig.copy()
-        dscfg.set_dest_dir(path.join(BASE_DIR, "output"))
-        dscfg.set_hops(hops)
-        dscfg.set_safe_seeding(False)
+            self.annotate('start seeding %s with %d hop(s)' % (filename, hops))
+            logging.info('start seeding %s with %d hop(s)' % (filename, hops))
 
-        def cb(ds):
-            from Tribler.Core.simpledefs import dlstatus_strings
-            msg('Seed infohash=%s, hops=%d, down=%d, up=%d, progress=%s, status=%s, peers=%s, cand=%d' %
-                          (tdef.get_infohash().encode('hex')[:5],
-                           hops,
-                           ds.get_current_speed('down'),
-                           ds.get_current_speed('up'),
-                           ds.get_progress(),
-                           dlstatus_strings[ds.get_status()],
-                           sum(ds.get_num_seeds_peers()),
-                           sum(1 for _ in self.tunnel_community.dispersy_yield_verified_candidates())))
+            from Tribler.Core.DownloadConfig import DefaultDownloadStartupConfig
+            defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
+            dscfg = defaultDLConfig.copy()
+            dscfg.set_dest_dir(path.join(BASE_DIR, "tribler"))
+            dscfg.set_hops(hops)
 
-            self.log_progress_stats(ds)
+            def cb(ds):
+                from Tribler.Core.simpledefs import dlstatus_strings
+                msg('Seed infohash=%s, hops=%d, down=%d, up=%d, progress=%s, status=%s, peers=%s, cand=%d' %
+                              (tdef.get_infohash().encode('hex')[:5],
+                               hops,
+                               ds.get_current_speed('down'),
+                               ds.get_current_speed('up'),
+                               ds.get_progress(),
+                               dlstatus_strings[ds.get_status()],
+                               sum(ds.get_num_seeds_peers()),
+                               sum(1 for _ in self.tunnel_community.dispersy_yield_verified_candidates())))
+                self.log_progress_stats(ds)
 
-            return 1.0, False
+                return 1.0, False
 
-        download = self.session.start_download_from_tdef(tdef, dscfg)
-        download.set_state_callback(cb, getpeerlist=True)
+            download = self.session.start_download_from_tdef(tdef, dscfg)
+            download.set_state_callback(cb)
 
-    def start_download(self, file_name, hops=1):
-        hops = int(hops)
-        self.annotate('start downloading %d hop(s)' % hops)
-        from Tribler.Core.DownloadConfig import DefaultDownloadStartupConfig
-        defaultDLConfig = DefaultDownloadStartupConfig.getInstance()
-        dscfg = defaultDLConfig.copy()
-        dscfg.set_hops(hops)
-        dscfg.set_dest_dir(path.join(BASE_DIR, 'tribler', 'download-%s-%d' % (self.session.get_dispersy_port(), hops)))
-        dscfg.set_safe_seeding(False)
+            seeding_port = download.ltmgr.get_session().listen_port()
+            logging.critical("SEEDING ON PORT: " + str(seeding_port))
 
-        # Monkeypatch! Disable creating intropoints after finishing downloading
-        self.tunnel_community.create_introduction_point = self.fake_create_introduction_point
-
-        from Tribler.Core.simpledefs import dlstatus_strings
-        tdef = self.get_tdef(file_name)
-
-        def cb(ds):
-            msg('Download infohash=%s, hops=%d, down=%s, up=%d, progress=%s, status=%s, peers=%s, cand=%d' %
-                (tdef.get_infohash().encode('hex')[:5],
-                 hops,
-                 ds.get_current_speed('down'),
-                 ds.get_current_speed('up'),
-                 ds.get_progress(),
-                 dlstatus_strings[ds.get_status()],
-                 sum(ds.get_num_seeds_peers()),
-                 sum(1 for _ in self.tunnel_community.dispersy_yield_verified_candidates())))
-
-            self.log_progress_stats(ds)
-            if ds.get_status() == 3 and sum(ds.get_num_seeds_peers()) == 0:
-                print "Connecting to peers"
-                self.connect_to_peers(download)
-            return 1.0, False
-
-        download = self.session.start_download_from_tdef(tdef, dscfg)
-        download.set_state_callback(cb, getpeerlist=True)
-
-        # Force lookup
-        # sleep(10)
-        # msg("Do a manual dht lookup call to bootstrap it a bit")
-        # self.tunnel_community.do_dht_lookup(tdef.get_infohash())
-
-        # self.session.lm.threadpool.call_in_thread(0, cb_start_download)
-
-    def connect_to_peers(self, download):
-        #for i in range(len(self.all_vars)):
-        i = 0
-        port = 20001 + i
-        if port != self.session.get_listen_port():
-            print "Adding peer at port:" + str(port)
-            download.handle.connect_peer(("127.0.0.1", port), 0)
+        logging.error("Call to cb_seeder_download")
+        reactor.callInThread(cb_seeder_download)
 
     def registerCallbacks(self):
         super(HiddenServicesClient, self).registerCallbacks()
