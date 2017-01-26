@@ -3,11 +3,12 @@
 @0:0 set_master_member 3081a7301006072a8648ce3d020106052b81040027038192000406712a1e5381d030ae25697bd6626810af48ed5094e5faae18a8b91e482e60b8681b26bf6aca786ad81b207ffb5a755956b4d6353c9dc487eb1bfdd17b66bd0de444e01a375fcf3401177a7bb102da7c5f50ad9375fe4a1ae1baca9d47870f56c841169fc36c2b113bafbadacab9f2b3c7773b3d82a54cda8fbde41b9e0e571ba631997a8259cc78e7f262e933542b51 name=multichain
 @0:0 set_community MultiChainCommunityCrawler name=multichain {21}
 @0:1 start_dispersy
-@0:10 init_community exit crypto {1-10}
-@0:10 init_community no_exit crypto {11-20}
-@0:15 online
-@0:18 reset_dispersy_statistics
-@0:20 introduce_candidates
-@0:30 setup_seeder 1hops10mb1 1 {12}
-@0:100 start_download 1hops10mb1 1 {13}
-@0:300 stop
+@0:16 configure_tunnel_community exit crypto {1-7}
+@0:16 configure_tunnel_community no_exit crypto {8-21}
+@0:16 configure_multichain_community {1-21}
+@0:60 online
+@0:100 introduce_candidates
+@0:120 reset_dispersy_statistics
+@0:160 start_seeder some_file {8}
+@0:200 start_download some_file {18-20}
+@0:1775 stop

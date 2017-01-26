@@ -42,10 +42,8 @@ from os import path
 from gumby.experiments.dispersymulticlient import MultiDispersyExperimentScriptClient, BASE_DIR
 from gumby.experiments.dispersymulticlient import main
 import logging
-from twisted.internet import reactor
 from twisted.python.log import msg
 from posix import environ
-from time import sleep
 
 
 class HiddenServicesClient(MultiDispersyExperimentScriptClient):

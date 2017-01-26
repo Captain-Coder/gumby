@@ -12,6 +12,7 @@ pythonpath.append(path.abspath(path.join(path.dirname(__file__), '..', '..', '..
 
 from Tribler.dispersy.candidate import Candidate
 from Tribler.community.multichain.community import MultiChainCommunity, MultiChainCommunityCrawler
+from twisted.internet import reactor
 
 
 class MultiChainClient(HiddenServicesClient):
@@ -51,8 +52,7 @@ class MultiChainClient(HiddenServicesClient):
         def cleanup_candidates(self):
             return 0
         # The multichain community needs to keep it's candidates around. So to 'override' the candidate cleanup, we
-        # monkeypatch the original object with a bound instance function, obtained through the __get__ descriptor of the
-        #  function object.
+        # monkeypatch the original object. Using the above method bound to the community instance.
         self.multichain_community.cleanup_candidates = cleanup_candidates.__get__(
                 self.multichain_community,
                 self.experiment_communities["multichain"].community_class)
@@ -93,14 +93,14 @@ class MultiChainDelayCommunity(MultiChainCommunity):
     def __init__(self, *args, **kwargs):
         super(MultiChainDelayCommunity, self).__init__(*args, **kwargs)
 
-    def received_signed_block(self, messages):
+    def received_half_block(self, messages):
         """
         Ignore the signature requests.
-        :param message: the to be delayed request
+        :param messages: the to be delayed request
         """
         def continue_after_delay():
             self.logger.info("Delay over.")
-            super(MultiChainDelayCommunity, self).received_signed_block(messages)
+            super(MultiChainDelayCommunity, self).received_half_block(messages)
         self.logger.info("Received signature requests that will delayed for %s." % self.delay)
         reactor.callLater(self.delay, continue_after_delay)
 
@@ -113,10 +113,10 @@ class MultiChainNoResponseCommunity(MultiChainCommunity):
     def __init__(self, *args, **kwargs):
         super(MultiChainNoResponseCommunity, self).__init__(*args, **kwargs)
 
-    def received_signed_block(self, messages):
+    def received_half_block(self, messages):
         """
         Ignore the signature requests.
-        :param message: the to be ignored request
+        :param messages: the to be ignored request
         """
         self.logger.info("Received signature request that will be ignored.")
         return

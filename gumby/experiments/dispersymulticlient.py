@@ -32,16 +32,14 @@
 import base64
 import json
 import logging
-import traceback
 from collections import Iterable, defaultdict
 from os import chdir, environ, getpid, makedirs, path, symlink
 from random import random
-from sys import exit, stderr, stdout
+from sys import exit
 from time import time, sleep
 from traceback import print_exc
 
 import shutil
-from twisted.internet.threads import deferToThread
 
 from gumby.log import setupLogging
 from gumby.scenario import ScenarioRunner
@@ -52,6 +50,7 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import deferLater
 
 from sys import path as pythonpath
+
 
 class MultiDispersyExperimentScriptClient(ExperimentClient):
     scenario_file = None
@@ -72,7 +71,7 @@ class MultiDispersyExperimentScriptClient(ExperimentClient):
         self.original_on_incomming_packets = None
 
         self._crypto = self.initializeCrypto()
-        self.generateMyMember()
+        self.generate_my_member()
         self.vars['private_keypair'] = base64.encodestring(self.my_member_private_key)
 
     def onVarsSend(self):
@@ -161,8 +160,7 @@ class MultiDispersyExperimentScriptClient(ExperimentClient):
         # NID_secp160k1 signing took 0.04 verify took 0.04 totals 0.08
         return u"NID_secp160k1"
 
-
-    def generateMyMember(self):
+    def generate_my_member(self):
         ec = self._crypto.generate_key(self.my_member_key_curve)
         self.my_member_key = self._crypto.key_to_bin(ec.pub())
         self.my_member_private_key = self._crypto.key_to_bin(ec)
@@ -560,6 +558,7 @@ class DispersyExperimentProvider(object):
 
 BASE_DIR = path.abspath(path.join(path.dirname(__file__), '..', '..', '..'))
 
+
 class DispersyExperimentTriblerProvider(DispersyExperimentProvider):
     def __init__(self, *args, **kargs):
         super(DispersyExperimentProvider, self).__init__(*args, **kargs)
@@ -591,16 +590,13 @@ class DispersyExperimentTriblerProvider(DispersyExperimentProvider):
             upgrader = self.session.prestart()
             while not upgrader.is_done:
                 sleep(0.1)
-            return self.session.start().addCallback(on_tribler_started)
+            return self.session.start().addCallback(on_tribler_started).addErrback(_handle_failure)
 
         def _handle_failure(f):
-            print "errback"
-            print "we got an exception: %s" % (f.getTraceback(),)
+            logging.error("Got an exception while starting Tribler session: %s", f.getTraceback())
             raise f
 
-        d = _do_start()
-        d.addErrback(_handle_failure)
-        return d
+        _do_start()
 
     def setup_session_config(self, client):
         from Tribler.Core.SessionConfig import SessionStartupConfig
