@@ -71,7 +71,7 @@ class ExperimentClient(object, LineReceiver):
             self._logger.error("No scenario file defined, starting empty experiment")
         else:
             if not path.exists(self.scenario_file) and not path.isabs(self.scenario_file):
-                self._logger.warning("Scenario file %s not found, attempting scenario file in experiment dir",
+                self._logger.info("Scenario file %s not found, attempting scenario file in experiment dir",
                                   self.scenario_file)
                 self.scenario_file = path.join(environ['EXPERIMENT_DIR'], self.scenario_file)
             if path.exists(self.scenario_file):

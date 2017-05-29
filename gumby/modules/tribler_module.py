@@ -27,13 +27,13 @@ class TriblerModule(BaseDispersyModule):
     def start_session(self):
         super(TriblerModule, self).start_session()
 
-        self._logger.error("Starting Tribler Session")
+        self._logger.info("Starting Tribler Session")
 
         if self.custom_community_loader:
             self.session.lm.community_loader = self.custom_community_loader
 
         def on_tribler_started(_):
-            self._logger.error("Tribler Session started")
+            self._logger.info("Tribler Session started")
             self.dispersy = self.session.lm.dispersy
             self.dispersy_available.callback(self.dispersy)
 

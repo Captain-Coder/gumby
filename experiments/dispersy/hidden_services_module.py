@@ -87,7 +87,7 @@ class HiddenServicesModule(CommunityExperimentModule):
     @experiment_callback
     def set_tunnel_exit(self, value):
         value = HiddenServicesModule.str2bool(value)
-        self._logger.error("This peer will be exit node: %s" % ('Yes' if value else 'No'))
+        self._logger.info("This peer will be exit node: %s" % ('Yes' if value else 'No'))
         self.session_config.set_tunnel_community_exitnode_enabled(value)
         self.tunnel_settings.become_exitnode = value
 
