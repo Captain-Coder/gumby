@@ -26,21 +26,21 @@ class TunnelStatisticsParser(object):
                     yield peer_nr, filename, peerdir
 
     def aggregate_introduction_points(self):
-        with open('introduction_points.txt', 'w', 0) as ips_file:
+        with open('introduction_points.csv', 'w', 0) as ips_file:
             ips_file.write("peer,infohash\n")
             for peer_nr, filename, dir in self.yield_files(file_to_check='introduction_points.txt'):
                 with open(filename) as ip_file:
                     ips_file.write(ip_file.read())
 
     def aggregate_rendezvous_points(self):
-        with open('rendezvous_points.txt', 'w', 0) as rps_file:
+        with open('rendezvous_points.csv', 'w', 0) as rps_file:
             rps_file.write("peer,cookie\n")
             for peer_nr, filename, dir in self.yield_files(file_to_check='rendezvous_points.txt'):
                 with open(filename) as rp_file:
                     rps_file.write(rp_file.read())
 
     def aggregate_downloads_history(self):
-        with open('downloads_history', 'w', 0) as downloads_file:
+        with open('downloads_history.csv', 'w', 0) as downloads_file:
             downloads_file.write('peer,time,infohash,progress,status,total_up,total_down,speed_up,speed_down\n')
             for peer_nr, filename, dir in self.yield_files(file_to_check='downloads_history.txt'):
                 with open(filename) as individual_downloads_file:
