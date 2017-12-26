@@ -1,3 +1,4 @@
+import json
 from os import path, remove
 from posix import environ
 from twisted.internet import reactor
@@ -115,6 +116,11 @@ class TriblerModule(BaseDispersyModule):
         if timeout:
             reactor.callLater(long(timeout), self.session.remove_download_by_id, tdef.infohash, removecontent=True,
                               removestate=True)
+
+    @experiment_callback
+    def write_triblerchain_stats(self):
+        with open('triblerchain.txt', 'w', 0) as triblerchain_file:
+            triblerchain_file.write(json.dumps(self.session.lm.triblerchain_community.get_statistics()))
 
     def create_test_torrent(self, file_name):
         if not path.exists(file_name):

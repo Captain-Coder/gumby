@@ -37,7 +37,6 @@
 
 # Code:
 import time
-from twisted.internet.task import LoopingCall
 
 from Tribler.Core.Libtorrent.LibtorrentDownloadImpl import LibtorrentStatisticsResponse
 from Tribler.Core.simpledefs import dlstatus_strings, DOWNLOAD, UPLOAD
@@ -60,6 +59,7 @@ class HiddenServicesModule(CommunityExperimentModule):
     def on_id_received(self):
         super(HiddenServicesModule, self).on_id_received()
         self.tribler_config.set_tunnel_community_enabled(True)
+        self.tribler_config.set_trustchain_enabled(True)
         self.tribler_config.set_mainline_dht_enabled(True)
         self.tribler_config.set_libtorrent_enabled(True)
         self.tribler_config.set_market_community_enabled(False)
@@ -122,6 +122,10 @@ class HiddenServicesModule(CommunityExperimentModule):
         self.tunnel_settings.max_time = long(value)
 
     @experiment_callback
+    def set_tunnel_max_time_inactive(self, value):
+        self.tunnel_settings.max_time_inactive = long(value)
+
+    @experiment_callback
     def disable_tunnel_crypto(self):
         self._logger.error("Disable tunnel crypto")
         self.tunnel_settings.crypto = NoTunnelCrypto()
@@ -147,9 +151,14 @@ class HiddenServicesModule(CommunityExperimentModule):
 
         with open('circuits.txt', 'w', 0) as circuits_file:
             for circuit_id, circuit in self.community.circuits.iteritems():
-                circuits_file.write('%s,%s,%s,%s,%s,%s\n' % (circuit_id, str(circuit.state), circuit.goal_hops,
-                                                             circuit.bytes_up, circuit.bytes_down,
-                                                             circuit.creation_time))
+                circuits_file.write('%s,%s,%s,%s,%s,%s,%s,%s:%d\n' % (circuit_id, str(circuit.state), circuit.goal_hops,
+                                                                      circuit.bytes_up, circuit.bytes_down,
+                                                                      circuit.creation_time, circuit.ctype,
+                                                                      circuit.first_hop[0], circuit.first_hop[1]))
+
+        with open('relays.txt', 'w', 0) as relays_file:
+            for circuit_id_1, relay in self.community.relay_from_to.iteritems():
+                relays_file.write('%s,%s,%s:%d,%s\n' % (circuit_id_1, relay.circuit_id, relay.sock_addr[0], relay.sock_addr[1], relay.bytes_up))
 
         with open('downloads_history.txt', 'w', 0) as downloads_file:
             for state_dict in self.download_states_history:

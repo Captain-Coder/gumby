@@ -223,6 +223,10 @@ class TriblerChainCommunityLauncher(CommunityLauncher):
     def get_kwargs(self, session):
         return {}
 
+    def finalize(self, dispersy, session, community):
+        super(TriblerChainCommunityLauncher, self).finalize(dispersy, session, community)
+        session.lm.triblerchain_community = community
+
 
 class MarketCommunityLauncher(CommunityLauncher):
 
