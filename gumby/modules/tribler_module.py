@@ -64,7 +64,7 @@ class TriblerModule(BaseDispersyModule):
         else:
             file_name = path.basename(environ["SCENARIO_FILE"]) + '-' + file_name
 
-        file_name = file_name + str(self.experiment.server_vars["global_random"])
+        file_name += str(self.experiment.server_vars["global_random"])
 
         if hops is not None:
             hops = int(hops)
