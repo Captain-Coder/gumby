@@ -109,6 +109,13 @@ class HiddenServicesModule(CommunityExperimentModule):
         self.tunnel_settings.crypto = NoTunnelCrypto()
 
     @experiment_callback
+    def set_tunnel_trustchain_scoring(self, value):
+        self._logger.error("Set tunnel peer selection based on trust chain scoring %s" % value)
+        self.tunnel_settings.enable_trustchain_scoring = bool(value)
+        if self.community:
+            self.community.settings.enable_trustchain_scoring = bool(value)
+
+    @experiment_callback
     def build_circuits(self):
         self._logger.info("Start building circuits")
         self.community.settings.max_circuits = 8
