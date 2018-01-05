@@ -8,8 +8,8 @@
 @0:20 transfer action=seed hops=1 {4}
 @0:40 annotate start-downloading
 @0:40 transfer hops=1 {5}
-@0:117 print_dht_table
-@0:117 write_tunnels_info
-@0:117 write_triblerchain_stats
-@0:120 stop_session
-@0:130 stop
+@0:137 print_dht_table
+@0:137 write_tunnels_info
+@0:137 write_triblerchain_stats
+@0:140 stop_session
+@0:150 stop
