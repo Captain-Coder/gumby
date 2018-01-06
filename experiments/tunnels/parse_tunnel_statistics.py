@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+import json
 import os
 import re
 import sys
@@ -26,6 +27,21 @@ class TunnelStatisticsParser(object):
                 filename = os.path.join(self.node_directory, peer, file_to_check)
                 if os.path.exists(filename) and os.stat(filename).st_size > 0:
                     yield peer_nr, filename, peerdir
+
+    def aggregate_trustchain_balances(self):
+        with open('trustchain_balances.csv', 'w', 0) as balances_file:
+            balances_file.write('peer,total_up,total_down,balance\n')
+            for peer_nr, filename, dir in self.yield_files(file_to_check='triblerchain.txt'):
+                with open(filename) as tc_file:
+                    tc_json = json.loads(tc_file.read())
+                    total_up = 0
+                    total_down = 0
+                    balance = 0
+                    if 'latest_block' in tc_json:
+                        total_up = tc_json['latest_block']['transaction']['total_up']
+                        total_down = tc_json['latest_block']['transaction']['total_down']
+                        balance = total_up - total_down
+                    balances_file.write('%s,%d,%d,%d\n' % (peer_nr, total_up, total_down, balance))
 
     def aggregate_introduction_points(self):
         with open('introduction_points.csv', 'w', 0) as ips_file:
@@ -127,6 +143,7 @@ class TunnelStatisticsParser(object):
                 circuits_graph_file.write('%s,%s,%s,%s,%d\n' % (from_peer, to_peer, circuit_num, type, bytes_transferred))
 
     def run(self):
+        self.aggregate_trustchain_balances()
         self.aggregate_introduction_points()
         self.aggregate_rendezvous_points()
         self.aggregate_downloads_history()

@@ -203,9 +203,6 @@ class TrustChainCommunityLauncher(CommunityLauncher):
         keypair = session.trustchain_keypair
         return dispersy.get_member(private_key=keypair.key_to_bin())
 
-    def get_kwargs(self, session):
-        return {}
-
 
 class TriblerChainCommunityLauncher(CommunityLauncher):
 
@@ -219,9 +216,6 @@ class TriblerChainCommunityLauncher(CommunityLauncher):
     def get_my_member(self, dispersy, session):
         keypair = session.trustchain_keypair
         return dispersy.get_member(private_key=keypair.key_to_bin())
-
-    def get_kwargs(self, session):
-        return {}
 
     def finalize(self, dispersy, session, community):
         super(TriblerChainCommunityLauncher, self).finalize(dispersy, session, community)
