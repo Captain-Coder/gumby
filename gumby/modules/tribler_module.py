@@ -118,6 +118,13 @@ class TriblerModule(BaseDispersyModule):
                               removestate=True)
 
     @experiment_callback
+    def add_peer_to_downloads(self, peer_nr):
+        self._logger.info("Adding peer %s to all downloads", peer_nr)
+        host, port = self.experiment.get_peer_ip_port_by_id(peer_nr)
+        for download in self.session.get_downloads():
+            download.add_peer((host, port))
+
+    @experiment_callback
     def write_triblerchain_stats(self):
         with open('triblerchain.txt', 'w', 0) as triblerchain_file:
             triblerchain_file.write(json.dumps(self.session.lm.triblerchain_community.get_statistics()))
