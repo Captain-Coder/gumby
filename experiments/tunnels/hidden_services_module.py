@@ -131,10 +131,9 @@ class HiddenServicesModule(CommunityExperimentModule):
         self.tunnel_settings.crypto = NoTunnelCrypto()
 
     @experiment_callback
-    def build_circuits(self):
+    def build_circuits(self, hops):
         self._logger.info("Start building circuits")
-        self.community.settings.max_circuits = 8
-        self.community.build_tunnels(3)
+        self.community.build_tunnels(int(hops))
 
     @experiment_callback
     def write_tunnels_info(self):
