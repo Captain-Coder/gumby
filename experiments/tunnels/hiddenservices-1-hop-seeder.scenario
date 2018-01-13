@@ -1,7 +1,3 @@
-# This experiment runs a 1 hop seeder seeding a 100mb file. Other processes will
-# download from this seeder using respectively 1, 2 and 3 hops. 
-#
-
 &include hidden_services_common.scenario
 
 @0:20 annotate start-seeding
