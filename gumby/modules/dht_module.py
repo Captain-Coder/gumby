@@ -192,7 +192,7 @@ class DHTModule(ExperimentModule):
 
             settings = sess.get_settings()
             settings["enable_lsd"] = False
-            sess.set_settings(settings)
+            sess.apply_settings(settings)
 
             inst.dht_ready = True
             return sess
