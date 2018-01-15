@@ -37,17 +37,18 @@ class DHTModule(ExperimentModule):
         return trib
 
     @property
+    def session(self):
+        return BaseDispersyModule.get_session(self.experiment)
+
+    @property
     def lm(self):
-        if not self.tribler.session or not self.tribler.session.lm:
+        if not self.session or not self.session.lm:
             raise Exception("Tribler instance not started or no LaunchManyCore?!")
-        return self.tribler.session.lm
+        return self.session.lm
 
     @property
     def session_config(self):
-        if self.tribler.session_config is None:
-            return self.tribler.session
-        else:
-            return self.tribler.session_config
+        return BaseDispersyModule.get_session_config(self.experiment)
 
     def on_id_received(self):
         super(DHTModule, self).on_id_received()

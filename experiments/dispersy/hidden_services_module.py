@@ -66,7 +66,9 @@ class HiddenServicesModule(CommunityExperimentModule):
         self.session_config.set_libtorrent_enabled(True)
         self.session_config.set_tunnel_community_socks5_listen_ports([23000 + 100 * self.my_id + i for i in range(5)])
         self.session_config.set_tunnel_community_exitnode_enabled(False)
-        self.community_launcher.community_kwargs["settings"] = TunnelSettings(self.session)
+        tunnel_config = TunnelSettings(self.session)
+        tunnel_config.socks_listen_ports = self.session_config.get_tunnel_community_socks5_listen_ports()
+        self.community_launcher.community_kwargs["settings"] = tunnel_config
 
     def on_dispersy_available(self, _):
         super(HiddenServicesModule, self).on_dispersy_available(_)
@@ -110,7 +112,7 @@ class HiddenServicesModule(CommunityExperimentModule):
 
     @experiment_callback
     def set_tunnel_trustchain_scoring(self, value):
-        self._logger.error("Set tunnel peer selection based on trust chain scoring %s" % value)
+        self._logger.info("Set tunnel peer selection based on trust chain scoring %s" % value)
         self.tunnel_settings.enable_trustchain_scoring = bool(value)
         if self.community:
             self.community.settings.enable_trustchain_scoring = bool(value)

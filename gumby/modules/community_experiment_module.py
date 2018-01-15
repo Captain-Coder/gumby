@@ -38,15 +38,15 @@ class CommunityExperimentModule(ExperimentModule):
 
     @property
     def dispersy(self):
-        return BaseDispersyModule.get_dispersy(self)
+        return BaseDispersyModule.get_dispersy(self.experiment)
 
     @property
     def session(self):
-        return BaseDispersyModule.get_session(self)
+        return BaseDispersyModule.get_session(self.experiment)
 
     @property
     def session_config(self):
-        return BaseDispersyModule.get_session_config(self)
+        return BaseDispersyModule.get_session_config(self.experiment)
 
     @property
     def community_loader(self):

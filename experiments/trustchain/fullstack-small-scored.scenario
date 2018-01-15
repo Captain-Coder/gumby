@@ -13,10 +13,12 @@
 @0:1 set_tunnel_exit False {4-20,26-75}
 @0:1 set_tunnel_max_time 180
 @0:1 set_tunnel_trustchain_scoring True
+@0:1 set_libtorrentmgr_alert_mask
 @0:1 set_triblerchain_score_cache_timeout 60
 
 @0:4 start_session
 @0:11 introduce_peers
+@0:12 kill_libtorrent_session
 @0:20 reset_dispersy_statistics
 
 @0:50 transfer file_name=A timeout=2200 action=seed hops=2 {4-5,26-28}

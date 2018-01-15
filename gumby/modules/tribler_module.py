@@ -56,6 +56,13 @@ class TriblerModule(BaseDispersyModule):
             ltsession.set_alert_mask(mask)
 
     @experiment_callback
+    def kill_libtorrent_session(self, hops=0):
+        if not hops in self.session.lm.ltmgr.ltsessions:
+            self._logger.error("Unable to kill libtorrent session")
+        else:
+            del self.session.lm.ltmgr.ltsessions[hops]
+
+    @experiment_callback
     def transfer(self, action="download", file_name=None, hops=None, timeout=None):
         assert action in ("download", "seed"), "Invalid transfer kind"
 
