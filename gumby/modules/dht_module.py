@@ -72,14 +72,14 @@ class DHTModule(ExperimentModule):
         for sess in self.lm.ltmgr.ltsessions.itervalues():
             settings = sess.get_settings()
             settings["enable_dht"] = False
-            sess.set_settings(settings)
+            sess.apply_settings(settings)
 
     @experiment_callback
     def enable_libtorrent_dht(self):
         for sess in self.lm.ltmgr.ltsessions.itervalues():
             settings = sess.get_settings()
             settings["enable_dht"] = True
-            sess.set_settings(settings)
+            sess.apply_settings(settings)
 
     @experiment_callback
     def disable_pymdht_dht(self):
