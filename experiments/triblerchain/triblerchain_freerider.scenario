@@ -1,0 +1,40 @@
+&module gumby.modules.tribler_module.TriblerModule
+&module gumby.modules.dht_module.DHTModule
+&module experiments.tunnels.tunnel_module.TunnelModule
+&module experiments.dht.dht_module.DHTModule
+
+@0:1 isolate_ipv8_overlay TrustChainCommunity
+@0:1 isolate_ipv8_overlay DHTDiscoveryCommunity
+@0:1 isolate_ipv8_overlay TriblerTunnelCommunity
+
+@0:1 isolate_dht
+
+@0:1 set_transfer_size 10485760
+
+TODO: disable hidden seeding to not steal competing slots?
+TODO: post processing
+TODO: large sybil
+
+@0:2 set_tunnel_exit True {0}
+@0:2 set_tunnel_exit False {1-9}
+@0:2 set_tunnel_max_traffic 4194304
+@0:2 set_tunnel_max_time 40
+@0:2 set_tunnel_netflow_scoring False
+@0:2 set_tunnel_min_circuits 1 {2-9}
+@0:2 set_tunnel_max_circuits 1 {2-9}
+@0:2 set_tunnel_num_competing_slots 2 {0}
+@0:2 set_tunnel_num_random_slots 0 {0}
+
+@0:5 start_session
+@0:7 introduce_peers
+@0:10 do_dht_announce
+
+@0:20 transfer action=seed hops=0 download_id=A timeout=900 {1}
+
+@0:30 transfer action=download hops=1 download_id=A timeout=200 {2-9}
+@0:250 transfer action=download hops=1 download_id=A timeout=200 {2-9}
+@0:500 transfer action=download hops=1 download_id=A timeout=200 {2-9}
+@0:750 transfer action=download hops=1 download_id=A timeout=200 {2-9}
+
+@0:960 stop_session
+@0:970 stop

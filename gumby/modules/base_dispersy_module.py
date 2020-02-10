@@ -97,7 +97,7 @@ class BaseDispersyModule(ExperimentModule):
             base_tracker_port = int(environ['TRACKER_PORT'])
             port_range = range(base_tracker_port, base_tracker_port + 4)
             with open(path.join(my_state_path, 'bootstraptribler.txt'), "w+") as f:
-                f.write("\n".join(["%s %d" % (environ['HEAD_HOST'], port) for port in port_range]))
+                f.write("\n".join(["%s %d" % (environ['SYNC_HOST'], port) for port in port_range]))
             bootstrap_file = path.join(my_state_path, 'bootstraptribler.txt')
 
         # We manually update the IPv8 bootstrap servers since IPv8 does not use the bootstraptribler.txt file.

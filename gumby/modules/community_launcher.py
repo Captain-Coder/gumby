@@ -262,6 +262,9 @@ class TriblerTunnelCommunityLauncher(IPv8CommunityLauncher):
         else:
             kwargs['dht_provider'] = MainlineDHTProvider(session.lm.mainline_dht, session.config.get_dispersy_port())
         kwargs['bandwidth_wallet'] = TrustchainWallet(session.lm.trustchain_community)
+
+        print "TriblerTunnelCommunity kwargs %r" % kwargs
+
         return kwargs
 
     def finalize(self, dispersy, session, community):

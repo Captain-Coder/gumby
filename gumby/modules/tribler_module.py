@@ -104,9 +104,7 @@ class TriblerModule(BaseDispersyModule):
         assert action in ("download", "seed"), "Invalid transfer kind"
 
         file_name = os.path.basename(environ["SCENARIO_FILE"])
-        if download_id:
-            download_id = int(download_id)
-        else:
+        if download_id is None:
             download_id = self.experiment.server_vars["global_random"]
 
         file_name += str(download_id)

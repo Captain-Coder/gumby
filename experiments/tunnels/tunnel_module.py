@@ -137,6 +137,21 @@ class TunnelModule(IPv8OverlayExperimentModule):
         self.tunnel_settings.max_time_inactive = long(value)
 
     @experiment_callback
+    def set_tunnel_num_competing_slots(self, value):
+        self.ipv8_community_launcher.community_kwargs["competing_slots"] = long(value)
+        print "TriblerTunnelCommunity kwargs %r" % self.ipv8_community_launcher.community_kwargs
+
+    @experiment_callback
+    def set_tunnel_num_random_slots(self, value):
+        self.ipv8_community_launcher.community_kwargs["random_slots"] = long(value)
+        print "TriblerTunnelCommunity kwargs %r" % self.ipv8_community_launcher.community_kwargs
+
+    @experiment_callback
+    def set_tunnel_netflow_scoring(self, value):
+        self.ipv8_community_launcher.community_kwargs["netflow_scoring_enabled"] = TunnelModule.str2bool(value)
+        print "TriblerTunnelCommunity kwargs %r" % self.ipv8_community_launcher.community_kwargs
+
+    @experiment_callback
     def build_circuits(self, hops):
         self._logger.info("Start building circuits")
         self.overlay.build_tunnels(int(hops))
